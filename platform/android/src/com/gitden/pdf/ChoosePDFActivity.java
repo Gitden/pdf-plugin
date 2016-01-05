@@ -2,12 +2,11 @@ package com.gitden.pdf;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.gitden.pdf.R;
 
 import android.app.AlertDialog;
 import android.app.ListActivity;
@@ -20,11 +19,19 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.FileObserver;
 import android.os.Handler;
-import android.os.Message;
 import android.view.View;
 import android.widget.ListView;
 
+enum Purpose {
+	PickPDF,
+	PickKeyFile
+}
+
 public class ChoosePDFActivity extends ListActivity {
+	static public final String PICK_KEY_FILE = "com.gitden.pdf.PICK_KEY_FILE";
+
+	private static String GITDEN_READER_DIR_NAME = "Gitden Reader";	// DO NOT CHANGE FOLDER NAME!!!
+
 	static private File  mDirectory;
 	static private Map<String, Integer> mPositions = new HashMap<String, Integer>();
 	private File         mParent;
@@ -33,11 +40,9 @@ public class ChoosePDFActivity extends ListActivity {
 	private Handler	     mHandler;
 	private Runnable     mUpdateFiles;
 	private ChoosePDFAdapter adapter;
+	private Purpose      mPurpose;
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-
+	private void show_message() {
 		AlertDialog.Builder builder2 = new AlertDialog.Builder(this);
 		builder2.setTitle("Information");
 		builder2.setMessage(getString(R.string.exit_message));
@@ -50,10 +55,54 @@ public class ChoosePDFActivity extends ListActivity {
 					}
 				});
 		alert2.show();
+	}
 
-		return;
+	private void open_file(String path) {
+		Uri uri = Uri.parse(path);
+		Intent intent = new Intent(this,MuPDFActivity.class);
+		intent.setAction(Intent.ACTION_VIEW);
+		intent.setData(uri);
+		startActivity(intent);
 
-		/*
+		finish();
+	}
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+
+		String file_path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + GITDEN_READER_DIR_NAME + "/.pdffile";
+		String file_content = "";
+
+		// Read normal file to text
+		try {
+			FileInputStream fis = new FileInputStream(file_path);
+			byte[] data = new byte[fis.available()];
+
+			if (data.length > 0) {
+				while(fis.read(data) != -1) {}
+			}
+			fis.close();
+			file_content = new String(data).trim();
+			data = null;
+		} catch (Exception e) {
+			show_message();
+			return;
+		}
+
+		File file = new File(file_path);
+		file.delete();
+		file = null;
+
+		open_file(file_content);
+
+		if (true)
+			return;
+
+
+		mPurpose = PICK_KEY_FILE.equals(getIntent().getAction()) ? Purpose.PickKeyFile : Purpose.PickPDF;
+
+
 		String storageState = Environment.getExternalStorageState();
 
 		if (!Environment.MEDIA_MOUNTED.equals(storageState)
@@ -107,29 +156,38 @@ public class ChoosePDFActivity extends ListActivity {
 						if (file.isDirectory())
 							return false;
 						String fname = file.getName().toLowerCase();
-						if (fname.endsWith(".pdf"))
-							return true;
-						if (fname.endsWith(".xps"))
-							return true;
-						if (fname.endsWith(".cbz"))
-							return true;
-						if (fname.endsWith(".png"))
-							return true;
-						if (fname.endsWith(".jpe"))
-							return true;
-						if (fname.endsWith(".jpeg"))
-							return true;
-						if (fname.endsWith(".jpg"))
-							return true;
-						if (fname.endsWith(".jfif"))
-							return true;
-						if (fname.endsWith(".jfif-tbnl"))
-							return true;
-						if (fname.endsWith(".tif"))
-							return true;
-						if (fname.endsWith(".tiff"))
-							return true;
-						return false;
+						switch (mPurpose) {
+						case PickPDF:
+							if (fname.endsWith(".pdf"))
+								return true;
+							if (fname.endsWith(".xps"))
+								return true;
+							if (fname.endsWith(".cbz"))
+								return true;
+							if (fname.endsWith(".png"))
+								return true;
+							if (fname.endsWith(".jpe"))
+								return true;
+							if (fname.endsWith(".jpeg"))
+								return true;
+							if (fname.endsWith(".jpg"))
+								return true;
+							if (fname.endsWith(".jfif"))
+								return true;
+							if (fname.endsWith(".jfif-tbnl"))
+								return true;
+							if (fname.endsWith(".tif"))
+								return true;
+							if (fname.endsWith(".tiff"))
+								return true;
+							return false;
+						case PickKeyFile:
+							if (fname.endsWith(".pfx"))
+								return true;
+							return false;
+						default:
+							return false;
+						}
 					}
 				});
 				if (mFiles == null)
@@ -169,10 +227,8 @@ public class ChoosePDFActivity extends ListActivity {
 			}
 		};
 		observer.startWatching();
-		
-		*/
 	}
-	
+
 	private void lastPosition() {
 		String p = mDirectory.getAbsolutePath();
 		if (mPositions.containsKey(p))
@@ -205,12 +261,23 @@ public class ChoosePDFActivity extends ListActivity {
 		Intent intent = new Intent(this,MuPDFActivity.class);
 		intent.setAction(Intent.ACTION_VIEW);
 		intent.setData(uri);
-		startActivity(intent);
+		switch (mPurpose) {
+		case PickPDF:
+			// Start an activity to display the PDF file
+			startActivity(intent);
+			break;
+		case PickKeyFile:
+			// Return the uri to the caller
+			setResult(RESULT_OK, intent);
+			finish();
+			break;
+		}
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
-		//mPositions.put(mDirectory.getAbsolutePath(), getListView().getFirstVisiblePosition());
+		//if (mDirectory != null)
+		//	mPositions.put(mDirectory.getAbsolutePath(), getListView().getFirstVisiblePosition());
 	}
 }

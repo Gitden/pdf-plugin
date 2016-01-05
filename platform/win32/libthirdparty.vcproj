@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="8.00"
 	Name="libthirdparty"
 	ProjectGUID="{5EDCF4FD-0291-4FB9-8D96-D58957CA5E3C}"
 	RootNamespace="mupdf"
-	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
 			Name="Win32"
+		/>
+		<Platform
+			Name="x64"
 		/>
 	</Platforms>
 	<ToolFiles>
@@ -40,13 +42,75 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\scripts;..\..\thirdparty\jbig2dec;..\..\thirdparty\jpeg;..\..\thirdparty\openjpeg\libopenjpeg;..\..\thirdparty\zlib;..\..\thirdparty\freetype\include"
+				AdditionalIncludeDirectories="..\..\scripts\freetype;..\..\scripts\jpeg;..\..\scripts\openjpeg;..\..\thirdparty\jbig2dec;..\..\thirdparty\jpeg;..\..\thirdparty\openjpeg\libopenjpeg;..\..\thirdparty\zlib;..\..\thirdparty\freetype\include;..\..\thirdparty\freetype\include\freetype"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;FT2_BUILD_LIBRARY;OPJ_STATIC;FT_CONFIG_MODULES_H=\&quot;slimftmodules.h\&quot;;FT_CONFIG_OPTIONS_H=\&quot;slimftoptions.h\&quot;;DEBUG=1;verbose=-1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				WarningLevel="3"
 				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
+			ConfigurationType="4"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\..\scripts\freetype;..\..\scripts\jpeg;..\..\scripts\openjpeg;..\..\thirdparty\jbig2dec;..\..\thirdparty\jpeg;..\..\thirdparty\openjpeg\libopenjpeg;..\..\thirdparty\zlib;..\..\thirdparty\freetype\include;..\..\thirdparty\freetype\include\freetype"
+				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;FT2_BUILD_LIBRARY;OPJ_STATIC;FT_CONFIG_MODULES_H=\&quot;slimftmodules.h\&quot;;FT_CONFIG_OPTIONS_H=\&quot;slimftoptions.h\&quot;;DEBUG=1;verbose=-1"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -103,7 +167,70 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\scripts;..\..\thirdparty\jbig2dec;..\..\thirdparty\jpeg;..\..\thirdparty\openjpeg\libopenjpeg;..\..\thirdparty\zlib;..\..\thirdparty\freetype\include"
+				AdditionalIncludeDirectories="..\..\scripts\freetype;..\..\scripts\jpeg;..\..\scripts\openjpeg;..\..\thirdparty\jbig2dec;..\..\thirdparty\jpeg;..\..\thirdparty\openjpeg\libopenjpeg;..\..\thirdparty\zlib;..\..\thirdparty\freetype\include;..\..\thirdparty\freetype\include\freetype"
+				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;FT2_BUILD_LIBRARY;OPJ_STATIC;FT_CONFIG_MODULES_H=\&quot;slimftmodules.h\&quot;;FT_CONFIG_OPTIONS_H=\&quot;slimftoptions.h\&quot;;verbose=-1"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
+			ConfigurationType="4"
+			CharacterSet="2"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="..\..\scripts\freetype;..\..\scripts\jpeg;..\..\scripts\openjpeg;..\..\thirdparty\jbig2dec;..\..\thirdparty\jpeg;..\..\thirdparty\openjpeg\libopenjpeg;..\..\thirdparty\zlib;..\..\thirdparty\freetype\include;..\..\thirdparty\freetype\include\freetype"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;FT2_BUILD_LIBRARY;OPJ_STATIC;FT_CONFIG_MODULES_H=\&quot;slimftmodules.h\&quot;;FT_CONFIG_OPTIONS_H=\&quot;slimftoptions.h\&quot;;verbose=-1"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -163,13 +290,75 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\scripts;..\..\thirdparty\jbig2dec;..\..\thirdparty\jpeg;..\..\thirdparty\openjpeg\libopenjpeg;..\..\thirdparty\zlib;..\..\thirdparty\freetype\include"
+				AdditionalIncludeDirectories="..\..\scripts\freetype;..\..\scripts\jpeg;..\..\scripts\openjpeg;..\..\thirdparty\jbig2dec;..\..\thirdparty\jpeg;..\..\thirdparty\openjpeg\libopenjpeg;..\..\thirdparty\zlib;..\..\thirdparty\freetype\include;..\..\thirdparty\freetype\include\freetype"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;FT2_BUILD_LIBRARY;OPJ_STATIC;FT_CONFIG_MODULES_H=\&quot;slimftmodules.h\&quot;;FT_CONFIG_OPTIONS_H=\&quot;slimftoptions.h\&quot;;MEMENTO=1;DEBUG=1;verbose=-1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				WarningLevel="3"
 				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Memento|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
+			ConfigurationType="4"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\..\scripts\freetype;..\..\scripts\jpeg;..\..\scripts\openjpeg;..\..\thirdparty\jbig2dec;..\..\thirdparty\jpeg;..\..\thirdparty\openjpeg\libopenjpeg;..\..\thirdparty\zlib;..\..\thirdparty\freetype\include;..\..\thirdparty\freetype\include\freetype"
+				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;FT2_BUILD_LIBRARY;OPJ_STATIC;FT_CONFIG_MODULES_H=\&quot;slimftmodules.h\&quot;;FT_CONFIG_OPTIONS_H=\&quot;slimftoptions.h\&quot;;MEMENTO=1;DEBUG=1;verbose=-1"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -442,218 +631,230 @@
 		<Filter
 			Name="libopenjpeg"
 			>
-			<Filter
-				Name="openjp2"
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\bio.c"
 				>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\bio.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\bio.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\cidx_manager.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\cidx_manager.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\cio.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\cio.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\dwt.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\dwt.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\event.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\event.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\function_list.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\function_list.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\image.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\image.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\indexbox_manager.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\invert.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\invert.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\j2k.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\j2k.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\jp2.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\jp2.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\mct.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\mct.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\mqc.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\mqc.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\openjpeg.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\openjpeg.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\opj_clock.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\opj_clock.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\opj_includes.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\opj_intmath.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\opj_inttypes.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\opj_malloc.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\opj_stdint.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\phix_manager.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\pi.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\pi.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\ppix_manager.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\raw.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\raw.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\t1.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\t1.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\t1_generate_luts.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\t1_luts.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\t2.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\t2.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\tcd.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\tcd.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\tgt.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\tgt.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\thix_manager.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\openjpeg\src\lib\openjp2\tpix_manager.c"
-					>
-				</File>
-			</Filter>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\bio.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\cidx_manager.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\cidx_manager.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\cio.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\cio.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\dwt.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\dwt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\event.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\event.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\fix.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\function_list.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\function_list.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\image.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\image.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\indexbox_manager.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\int.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\invert.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\invert.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\j2k.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\j2k.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\j2k_lib.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\j2k_lib.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\jp2.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\jp2.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\mct.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\mct.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\mqc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\mqc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\openjpeg.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\openjpeg.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\opj_config.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\opj_config_private.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\opj_includes.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\opj_intmath.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\opj_inttypes.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\opj_malloc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\opj_stdint.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\phix_manager.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\pi.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\pi.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\ppix_manager.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\raw.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\raw.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\t1.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\t1.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\t1_generate_luts.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\t1_luts.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\t2.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\t2.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\tcd.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\tcd.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\tgt.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\tgt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\thix_manager.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\openjpeg\libopenjpeg\tpix_manager.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="libfreetype"
@@ -714,6 +915,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\thirdparty\freetype\src\base\ftfntfmt.c"
+					>
+				</File>
+				<File
 					RelativePath="..\..\thirdparty\freetype\src\base\ftgasp.c"
 					>
 				</File>
@@ -739,10 +944,6 @@
 				</File>
 				<File
 					RelativePath="..\..\thirdparty\freetype\src\base\fttype1.c"
-					>
-				</File>
-				<File
-					RelativePath="..\..\thirdparty\freetype\src\base\ftxf86.c"
 					>
 				</File>
 			</Filter>
@@ -1102,6 +1303,18 @@
 					</Filter>
 				</Filter>
 			</Filter>
+		</Filter>
+		<Filter
+			Name="libmujs"
+			>
+			<File
+				RelativePath="..\..\thirdparty\mujs\mujs.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\thirdparty\mujs\one.c"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

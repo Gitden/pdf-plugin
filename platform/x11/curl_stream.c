@@ -14,10 +14,10 @@
 #define DEBUG_MESSAGE(A) do { } while(0)
 #endif
 
-#define BLOCK_SHIFT 12
+#define BLOCK_SHIFT 20
 #define BLOCK_SIZE (1<<BLOCK_SHIFT)
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #else
 #include "pthread.h"
@@ -45,8 +45,11 @@ struct curl_stream_state_s
 	int kill_thread;
 	void (*more_data)(void *, int);
 	void *more_data_arg;
+	const char *error;
 
-#ifdef _WIN32
+	unsigned char public_buffer[4096];
+
+#if defined(_WIN32) || defined(_WIN64)
 	void *thread;
 	DWORD thread_id;
 	HANDLE mutex;
@@ -58,7 +61,7 @@ struct curl_stream_state_s
 
 static void fetcher_thread(curl_stream_state *state);
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64)
 static void
 lock(curl_stream_state *state)
 {
@@ -93,7 +96,6 @@ unlock(curl_stream_state *state)
 	pthread_mutex_unlock(&state->mutex);
 }
 
-
 static void *
 pthread_thread(void *arg)
 {
@@ -110,7 +112,7 @@ static size_t header_arrived(void *ptr, size_t size, size_t nmemb, void *state_)
 	if (strncmp(ptr, "Content-Range:", 14) == 0)
 	{
 		char *p = (char *)ptr;
-		int len = nmemb * size;
+		int len = (int)(nmemb * size);
 		int start, end, total;
 		while (len && !isdigit(*p))
 			p++, len--;
@@ -205,7 +207,7 @@ static size_t data_arrived(void *ptr, size_t size, size_t nmemb, void *state_)
 	}
 	if (state->content_length < 0)
 	{
-		int newsize = state->current_fill_point + size;
+		int newsize = (int)(state->current_fill_point + size);
 		if (newsize > state->buffer_max)
 		{
 			/* Expand the buffer */
@@ -222,10 +224,10 @@ static size_t data_arrived(void *ptr, size_t size, size_t nmemb, void *state_)
 		}
 	}
 
-	DEBUG_MESSAGE((state->ctx, "data arrived: offset=%d len=%d", state->current_fill_point, size));
+	DEBUG_MESSAGE((state->ctx, "data arrived: offset=%d len=%d", state->current_fill_point, (int) size));
 	old_start = state->current_fill_point;
 	memcpy(state->buffer + state->current_fill_point, ptr, size);
-	state->current_fill_point += size;
+	state->current_fill_point += (int)size;
 	if (state->current_fill_point == state->content_length ||
 		(((state->current_fill_point ^ old_start) & ~(BLOCK_SIZE-1)) != 0))
 	{
@@ -250,6 +252,7 @@ fetch_chunk(curl_stream_state *state)
 {
 	char text[32];
 	int fill, start, end;
+	CURLcode ret;
 
 	lock(state);
 
@@ -300,7 +303,9 @@ fetch_chunk(curl_stream_state *state)
 		end = state->content_length-1;
 	snprintf(text, 32, "%d-%d", start, end);
 	curl_easy_setopt(state->handle, CURLOPT_RANGE, text);
-	curl_easy_perform(state->handle);
+	ret = curl_easy_perform(state->handle);
+	if (ret != CURLE_OK)
+		state->error = curl_easy_strerror(ret);
 }
 
 static void
@@ -311,16 +316,23 @@ fetcher_thread(curl_stream_state *state)
 }
 
 static int
-stream_read(fz_stream *stream, unsigned char *buf, int len)
+stream_next(fz_context *ctx, fz_stream *stream, int len)
 {
 	curl_stream_state *state = (curl_stream_state *)stream->state;
 	int len_read = 0;
 	int read_point = stream->pos;
 	int block = read_point>>BLOCK_SHIFT;
 	int left_over = (-read_point) & (BLOCK_SIZE-1);
+	unsigned char *buf = state->public_buffer;
+
+	if (state->error != NULL)
+		fz_throw(ctx, FZ_ERROR_GENERIC, "cannot fetch data: %s", state->error);
+
+	if (len > sizeof(state->public_buffer))
+		len = sizeof(state->public_buffer);
 
 	if (state->content_length == 0)
-		fz_throw(stream->ctx, FZ_ERROR_TRYLATER, "read of a block we don't have (A) (offset=%d)", read_point);
+		fz_throw(ctx, FZ_ERROR_TRYLATER, "read of a block we don't have (A) (offset=%d)", read_point);
 
 	if (state->map == NULL)
 	{
@@ -328,11 +340,16 @@ stream_read(fz_stream *stream, unsigned char *buf, int len)
 		 * content length. */
 		if (read_point + len > state->current_fill_point)
 		{
-			stream->rp = stream->wp = stream->bp;
-			fz_throw(stream->ctx, FZ_ERROR_TRYLATER, "read of a block we don't have (B) (offset=%d)", read_point);
+			stream->rp = stream->wp;
+			fz_throw(ctx, FZ_ERROR_TRYLATER, "read of a block we don't have (B) (offset=%d)", read_point);
 		}
 		memcpy(buf, state->buffer + read_point, len);
-		return len;
+		stream->rp = buf;
+		stream->wp = buf + len;
+		stream->pos += len;
+		if (len == 0)
+			return EOF;
+		return *stream->rp++;
 	}
 
 	if (read_point + len > state->content_length)
@@ -348,8 +365,8 @@ stream_read(fz_stream *stream, unsigned char *buf, int len)
 			lock(state);
 			state->fill_point = block;
 			unlock(state);
-			stream->rp = stream->wp = stream->bp;
-			fz_throw(stream->ctx, FZ_ERROR_TRYLATER, "read of a block we don't have (C) (offset=%d)", read_point);
+			stream->rp = stream->wp;
+			fz_throw(ctx, FZ_ERROR_TRYLATER, "read of a block we don't have (C) (offset=%d)", read_point);
 		}
 		block++;
 		if (left_over > len)
@@ -369,8 +386,8 @@ stream_read(fz_stream *stream, unsigned char *buf, int len)
 			lock(state);
 			state->fill_point = block;
 			unlock(state);
-			stream->rp = stream->wp = stream->bp;
-			fz_throw(stream->ctx, FZ_ERROR_TRYLATER, "read of a block we don't have (D) (offset=%d)", read_point);
+			stream->rp = stream->wp;
+			fz_throw(ctx, FZ_ERROR_TRYLATER, "read of a block we don't have (D) (offset=%d)", read_point);
 		}
 		block++;
 		memcpy(buf, state->buffer + read_point, BLOCK_SIZE);
@@ -388,14 +405,18 @@ stream_read(fz_stream *stream, unsigned char *buf, int len)
 			lock(state);
 			state->fill_point = block;
 			unlock(state);
-			stream->rp = stream->wp = stream->bp;
-			fz_throw(stream->ctx, FZ_ERROR_TRYLATER, "read of a block we don't have (E) (offset=%d)", read_point);
+			stream->rp = stream->wp;
+			fz_throw(ctx, FZ_ERROR_TRYLATER, "read of a block we don't have (E) (offset=%d)", read_point);
 		}
 		memcpy(buf, state->buffer + read_point, len);
 		len_read += len;
 	}
-
-	return len_read;
+	stream->rp = state->public_buffer;
+	stream->wp = stream->rp + len_read;
+	stream->pos += len_read;
+	if (len_read == 0)
+		return EOF;
+	return *stream->rp++;
 }
 
 static void
@@ -410,7 +431,7 @@ stream_close(fz_context *ctx, void *state_)
 	state->kill_thread = 1;
 	unlock(state);
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64)
 	WaitForSingleObject(state->thread, INFINITE);
 	CloseHandle(state->thread);
 	CloseHandle(state->mutex);
@@ -419,9 +440,9 @@ stream_close(fz_context *ctx, void *state_)
 	pthread_mutex_destroy(&state->mutex);
 #endif
 
-	fz_free(state->ctx, state->buffer);
-	fz_free(state->ctx, state->map);
-	fz_free(state->ctx, state);
+	fz_free(ctx, state->buffer);
+	fz_free(ctx, state->map);
+	fz_free(ctx, state);
 }
 
 static fz_stream hack_stream;
@@ -429,7 +450,7 @@ static curl_stream_state hack;
 static int hack_pos;
 
 static void
-stream_seek(fz_stream *stream, int offset, int whence)
+stream_seek(fz_context *ctx, fz_stream *stream, fz_off_t offset, int whence)
 {
 	curl_stream_state *state = (curl_stream_state *)stream->state;
 
@@ -449,7 +470,7 @@ stream_seek(fz_stream *stream, int offset, int whence)
 		offset = 0;
 	else if (state->content_length > 0 && offset > state->content_length)
 		offset = state->content_length;
-	stream->wp = stream->rp = stream->bp;
+	stream->wp = stream->rp;
 	stream->pos = offset;
 	hack = *state;
 	hack_pos = offset;
@@ -457,7 +478,7 @@ stream_seek(fz_stream *stream, int offset, int whence)
 }
 
 static int
-stream_meta(fz_stream *stream, int key, int size, void *ptr)
+stream_meta(fz_context *ctx, fz_stream *stream, int key, int size, void *ptr)
 {
 	curl_stream_state *state = (curl_stream_state *)stream->state;
 
@@ -465,7 +486,7 @@ stream_meta(fz_stream *stream, int key, int size, void *ptr)
 	{
 	case FZ_STREAM_META_LENGTH:
 		if (!state->data_arrived)
-			fz_throw(stream->ctx, FZ_ERROR_TRYLATER, "still awaiting file length");
+			fz_throw(ctx, FZ_ERROR_TRYLATER, "still awaiting file length");
 		return state->content_length;
 	case FZ_STREAM_META_PROGRESSIVE:
 		return 1;
@@ -501,7 +522,7 @@ fz_stream *fz_stream_from_curl(fz_context *ctx, char *filename, void (*more_data
 
 	curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_arrived);
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64)
 	state->mutex = CreateMutex(NULL, FALSE, NULL);
 	if (state->mutex == NULL)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "mutex creation failed");
@@ -518,7 +539,7 @@ fz_stream *fz_stream_from_curl(fz_context *ctx, char *filename, void (*more_data
 
 #endif
 
-	stream = fz_new_stream(ctx, state, stream_read, stream_close);
+	stream = fz_new_stream(ctx, state, stream_next, stream_close);
 	stream->seek = stream_seek;
 	stream->meta = stream_meta;
 	return stream;

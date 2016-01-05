@@ -157,6 +157,7 @@ jbig2_sd_count_referred(Jbig2Ctx *ctx, Jbig2Segment *segment)
         rsegment = jbig2_find_segment(ctx, segment->referred_to_segments[index]);
         if (rsegment && ((rsegment->flags & 63) == 0) &&
             rsegment->result &&
+            (((Jbig2SymbolDict *)rsegment->result)->n_symbols > 0) &&
             ((*((Jbig2SymbolDict *)rsegment->result)->glyphs) != NULL))
             n_dicts++;
     }
@@ -185,6 +186,7 @@ jbig2_sd_list_referred(Jbig2Ctx *ctx, Jbig2Segment *segment)
     for (index = 0; index < segment->referred_to_segment_count; index++) {
         rsegment = jbig2_find_segment(ctx, segment->referred_to_segments[index]);
         if (rsegment && ((rsegment->flags & 63) == 0) && rsegment->result &&
+            (((Jbig2SymbolDict *)rsegment->result)->n_symbols > 0) &&
             ((*((Jbig2SymbolDict *)rsegment->result)->glyphs) != NULL)) {
             /* add this referred to symbol dictionary */
             dicts[dindex++] = (Jbig2SymbolDict *)rsegment->result;
@@ -359,6 +361,12 @@ jbig2_decode_symbol_dict(Jbig2Ctx *ctx,
 	  "error or OOB decoding height class delta (%d)\n", code);
       }
 
+      if (!params->SDHUFF && jbig2_arith_has_reached_marker(as)) {
+          code = jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
+              "prevent DOS while decoding height classes");
+          goto cleanup2;
+      }
+
       /* 6.5.5 (4b) */
       HCHEIGHT = HCHEIGHT + HCDH;
       SYMWIDTH = 0;
@@ -442,7 +450,10 @@ jbig2_decode_symbol_dict(Jbig2Ctx *ctx,
 
 		  code = jbig2_decode_generic_region(ctx, segment, &region_params,
               as, image, GB_stats);
-          if (code < 0) goto cleanup4;
+          if (code < 0) {
+              jbig2_image_release(ctx, image);
+              goto cleanup4;
+          }
 
           SDNEWSYMS->glyphs[NSYMSDECODED] = image;
 	      } else {
@@ -777,7 +788,6 @@ jbig2_decode_symbol_dict(Jbig2Ctx *ctx,
     int exflag = 0;
     int64_t limit = params->SDNUMINSYMS + params->SDNUMNEWSYMS;
     int32_t exrunlength;
-    /* SumatraPDF: prevent infinite loop */
     int zerolength = 0;
 
     while (i < limit) {
@@ -785,13 +795,13 @@ jbig2_decode_symbol_dict(Jbig2Ctx *ctx,
         exrunlength = jbig2_huffman_get(hs, SBHUFFRSIZE, &code);
       else
         code = jbig2_arith_int_decode(IAEX, as, &exrunlength);
-      /* SumatraPDF: prevent infinite loop */
+      /* prevent infinite loop */
       zerolength = exrunlength > 0 ? 0 : zerolength + 1;
-      if (code || (exrunlength > limit - i) || (exrunlength < 0) || (zerolength > 4)) {
+      if (code || (exrunlength > limit - i) || (exrunlength < 0) || (zerolength > 4) ||
+          (exflag && (exrunlength > params->SDNUMEXSYMS - j))) {
         if (code)
           jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
             "failed to decode exrunlength for exported symbols");
-        /* SumatraPDF: prevent infinite loop */
         else if (exrunlength <= 0)
           jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
             "runlength too small in export symbol table (%d <= 0)\n", exrunlength);
@@ -923,7 +933,6 @@ jbig2_symbol_dictionary(Jbig2Ctx *ctx, Jbig2Segment *segment,
       default:
 	return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
 	    "symbol dictionary specified invalid huffman table");
-	break;
     }
     if (params.SDHUFFDH == NULL)
     {
@@ -951,9 +960,9 @@ jbig2_symbol_dictionary(Jbig2Ctx *ctx, Jbig2Segment *segment,
         break;
       case 2:
       default:
-	return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
+        jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
 	    "symbol dictionary specified invalid huffman table");
-	break;
+        goto cleanup; /* Jump direct to cleanup to avoid 2 errors being given */
     }
     if (params.SDHUFFDW == NULL)
     {

@@ -1,7 +1,5 @@
 package com.gitden.pdf;
 
-import com.gitden.pdf.R;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;

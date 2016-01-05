@@ -1,5 +1,3 @@
-#include "pdfapp.h"
-
 #ifndef UNICODE
 #define UNICODE
 #endif
@@ -10,6 +8,9 @@
 #include <windows.h>
 #include <commdlg.h>
 #include <shellapi.h>
+
+/* Include pdfapp.h *AFTER* the UNICODE defines */
+#include "pdfapp.h"
 
 #ifndef WM_MOUSEWHEEL
 #define WM_MOUSEWHEEL 0x020A
@@ -35,7 +36,9 @@ static int justcopied = 0;
 
 static pdfapp_t gapp;
 
+#ifndef PATH_MAX
 #define PATH_MAX (1024)
+#endif
 
 static wchar_t wbuf[PATH_MAX];
 static char filename[PATH_MAX];
@@ -53,9 +56,9 @@ static char filename[PATH_MAX];
 void install_app(char *argv0)
 {
 	char buf[512];
-	HKEY software, classes, mupdf, dotpdf, dotxps;
+	HKEY software, classes, mupdf, dotpdf, dotxps, dotepub;
 	HKEY shell, open, command, supported_types;
-	HKEY pdf_progids, xps_progids;
+	HKEY pdf_progids, xps_progids, epub_progids;
 
 	OPEN_KEY(HKEY_CURRENT_USER, "Software", software);
 	OPEN_KEY(software, "Classes", classes);
@@ -63,6 +66,8 @@ void install_app(char *argv0)
 	OPEN_KEY(dotpdf, "OpenWithProgids", pdf_progids);
 	OPEN_KEY(classes, ".xps", dotxps);
 	OPEN_KEY(dotxps, "OpenWithProgids", xps_progids);
+	OPEN_KEY(classes, ".epub", dotepub);
+	OPEN_KEY(dotepub, "OpenWithProgids", epub_progids);
 	OPEN_KEY(classes, "MuPDF", mupdf);
 	OPEN_KEY(mupdf, "SupportedTypes", supported_types);
 	OPEN_KEY(mupdf, "shell", shell);
@@ -75,9 +80,12 @@ void install_app(char *argv0)
 	SET_KEY(command, "", buf);
 	SET_KEY(supported_types, ".pdf", "");
 	SET_KEY(supported_types, ".xps", "");
+	SET_KEY(supported_types, ".epub", "");
 	SET_KEY(pdf_progids, "MuPDF", "");
 	SET_KEY(xps_progids, "MuPDF", "");
+	SET_KEY(epub_progids, "MuPDF", "");
 
+	RegCloseKey(dotepub);
 	RegCloseKey(dotxps);
 	RegCloseKey(dotpdf);
 	RegCloseKey(mupdf);
@@ -182,7 +190,7 @@ int winfilename(wchar_t *buf, int len)
 	ofn.nMaxFile = len;
 	ofn.lpstrInitialDir = NULL;
 	ofn.lpstrTitle = L"MuPDF: Open PDF file";
-	ofn.lpstrFilter = L"Documents (*.pdf;*.xps;*.cbz;*.zip;*.png;*.jpg;*.tif)\0*.zip;*.cbz;*.xps;*.pdf;*.jpe;*.jpg;*.jpeg;*.jfif;*.tif;*.tiff\0PDF Files (*.pdf)\0*.pdf\0XPS Files (*.xps)\0*.xps\0CBZ Files (*.cbz;*.zip)\0*.zip;*.cbz\0Image Files (*.png;*.jpe;*.tif)\0*.png;*.jpg;*.jpe;*.jpeg;*.jfif;*.tif;*.tiff\0All Files\0*\0\0";
+	ofn.lpstrFilter = L"Documents (*.pdf;*.xps;*.cbz;*.epub;*.zip;*.png;*.jpeg;*.tiff)\0*.zip;*.cbz;*.xps;*.epub;*.pdf;*.jpe;*.jpg;*.jpeg;*.jfif;*.tif;*.tiff\0PDF Files (*.pdf)\0*.pdf\0XPS Files (*.xps)\0*.xps\0CBZ Files (*.cbz;*.zip)\0*.zip;*.cbz\0EPUB Files (*.epub)\0*.epub\0Image Files (*.png;*.jpeg;*.tiff)\0*.png;*.jpg;*.jpe;*.jpeg;*.jfif;*.tif;*.tiff\0All Files\0*\0\0";
 	ofn.Flags = OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
 	return GetOpenFileNameW(&ofn);
 }
@@ -200,7 +208,7 @@ int wingetsavepath(pdfapp_t *app, char *buf, int len)
 	ofn.nMaxFile = PATH_MAX;
 	ofn.lpstrInitialDir = NULL;
 	ofn.lpstrTitle = L"MuPDF: Save PDF file";
-	ofn.lpstrFilter = L"Documents (*.pdf;*.xps;*.cbz;*.zip;*.png;*.jpg;*.tif)\0*.zip;*.cbz;*.xps;*.pdf;*.jpe;*.jpg;*.jpeg;*.jfif;*.tif;*.tiff\0PDF Files (*.pdf)\0*.pdf\0XPS Files (*.xps)\0*.xps\0CBZ Files (*.cbz;*.zip)\0*.zip;*.cbz\0Image Files (*.png;*.jpe;*.tif)\0*.png;*.jpg;*.jpe;*.jpeg;*.jfif;*.tif;*.tiff\0All Files\0*\0\0";
+	ofn.lpstrFilter = L"PDF Documents (*.pdf)\0*.pdf\0All Files\0*\0\0";
 	ofn.Flags = OFN_HIDEREADONLY;
 	if (GetSaveFileName(&ofn))
 	{
@@ -442,6 +450,8 @@ INT CALLBACK
 dloginfoproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	char buf[256];
+	wchar_t bufx[256];
+	fz_context *ctx = gapp.ctx;
 	fz_document *doc = gapp.doc;
 
 	switch(message)
@@ -450,7 +460,11 @@ dloginfoproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		SetDlgItemTextW(hwnd, 0x10, wbuf);
 
-		if (fz_meta(doc, FZ_META_FORMAT_INFO, buf, 256) < 0)
+		if (fz_lookup_metadata(ctx, doc, FZ_META_FORMAT, buf, sizeof buf) >= 0)
+		{
+			SetDlgItemTextA(hwnd, 0x11, buf);
+		}
+		else
 		{
 			SetDlgItemTextA(hwnd, 0x11, "Unknown");
 			SetDlgItemTextA(hwnd, 0x12, "None");
@@ -458,9 +472,7 @@ dloginfoproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			return TRUE;
 		}
 
-		SetDlgItemTextA(hwnd, 0x11, buf);
-
-		if (fz_meta(doc, FZ_META_CRYPT_INFO, buf, 256) == 0)
+		if (fz_lookup_metadata(ctx, doc, FZ_META_ENCRYPTION, buf, sizeof buf) >= 0)
 		{
 			SetDlgItemTextA(hwnd, 0x12, buf);
 		}
@@ -468,27 +480,27 @@ dloginfoproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			SetDlgItemTextA(hwnd, 0x12, "None");
 		}
+
 		buf[0] = 0;
-		if (fz_meta(doc, FZ_META_HAS_PERMISSION, NULL, FZ_PERMISSION_PRINT) == 0)
+		if (fz_has_permission(ctx, doc, FZ_PERMISSION_PRINT))
 			strcat(buf, "print, ");
-		if (fz_meta(doc, FZ_META_HAS_PERMISSION, NULL, FZ_PERMISSION_CHANGE) == 0)
-			strcat(buf, "modify, ");
-		if (fz_meta(doc, FZ_META_HAS_PERMISSION, NULL, FZ_PERMISSION_COPY) == 0)
+		if (fz_has_permission(ctx, doc, FZ_PERMISSION_COPY))
 			strcat(buf, "copy, ");
-		if (fz_meta(doc, FZ_META_HAS_PERMISSION, NULL, FZ_PERMISSION_NOTES) == 0)
+		if (fz_has_permission(ctx, doc, FZ_PERMISSION_EDIT))
+			strcat(buf, "edit, ");
+		if (fz_has_permission(ctx, doc, FZ_PERMISSION_ANNOTATE))
 			strcat(buf, "annotate, ");
 		if (strlen(buf) > 2)
 			buf[strlen(buf)-2] = 0;
 		else
-			strcpy(buf, "None");
+			strcpy(buf, "none");
 		SetDlgItemTextA(hwnd, 0x13, buf);
 
 #define SETUTF8(ID, STRING) \
+		if (fz_lookup_metadata(ctx, doc, "info:" STRING, buf, sizeof buf) >= 0) \
 		{ \
-			*(char **)buf = STRING; \
-			if (fz_meta(doc, FZ_META_INFO, buf, 256) <= 0) \
-				buf[0] = 0; \
-			SetDlgItemTextA(hwnd, ID, buf); \
+			MultiByteToWideChar(CP_UTF8, 0, buf, -1, bufx, nelem(bufx)); \
+			SetDlgItemTextW(hwnd, ID, bufx); \
 		}
 
 		SETUTF8(0x20, "Title");
@@ -647,8 +659,10 @@ void winopen()
 static void
 do_close(pdfapp_t *app)
 {
+	fz_context *ctx = app->ctx;
 	pdfapp_close(app);
 	free(dibinf);
+	fz_drop_context(ctx);
 }
 
 void winclose(pdfapp_t *app)
@@ -709,7 +723,7 @@ void windrawstring(pdfapp_t *app, int x, int y, char *s)
 
 void winblitsearch()
 {
-	if (gapp.isediting)
+	if (gapp.issearching)
 	{
 		char buf[sizeof(gapp.search) + 50];
 		sprintf(buf, "Search: %s", gapp.search);
@@ -878,12 +892,6 @@ void windocopy(pdfapp_t *app)
 	justcopied = 1;	/* keep inversion around for a while... */
 }
 
-void winreloadfile(pdfapp_t *app)
-{
-	pdfapp_close(app);
-	pdfapp_open(app, filename, 1);
-}
-
 void winreloadpage(pdfapp_t *app)
 {
 	SendMessage(hwndview, WM_APP, 0, 0);
@@ -909,6 +917,9 @@ static void killtimer(pdfapp_t *app)
 
 void handlekey(int c)
 {
+	int modifier = (GetAsyncKeyState(VK_SHIFT) < 0);
+	modifier |= ((GetAsyncKeyState(VK_CONTROL) < 0)<<2);
+
 	if (timer_pending)
 		killtimer(&gapp);
 
@@ -937,12 +948,15 @@ void handlekey(int c)
 		}
 	}
 
-	pdfapp_onkey(&gapp, c);
+	pdfapp_onkey(&gapp, c, modifier);
 	winrepaint(&gapp);
 }
 
 void handlemouse(int x, int y, int btn, int state)
 {
+	int modifier = (GetAsyncKeyState(VK_SHIFT) < 0);
+	modifier |= ((GetAsyncKeyState(VK_CONTROL) < 0)<<2);
+
 	if (state != 0 && timer_pending)
 		killtimer(&gapp);
 
@@ -957,7 +971,7 @@ void handlemouse(int x, int y, int btn, int state)
 	if (state == -1)
 		ReleaseCapture();
 
-	pdfapp_onmouse(&gapp, x, y, btn, 0, state);
+	pdfapp_onmouse(&gapp, x, y, btn, modifier, state);
 }
 
 LRESULT CALLBACK
@@ -987,8 +1001,6 @@ frameproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			info();
 			return 0;
 		}
-		if (wParam == SC_MAXIMIZE)
-			gapp.shrinkwrap = 0;
 		break;
 
 	case WM_SIZE:
@@ -999,6 +1011,8 @@ frameproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		GetClientRect(hwnd, &rect);
 		MoveWindow(hwndview, rect.left, rect.top,
 		rect.right-rect.left, rect.bottom-rect.top, TRUE);
+		if (wParam == SIZE_MAXIMIZED)
+			gapp.shrinkwrap = 0;
 		return 0;
 	}
 
@@ -1094,9 +1108,15 @@ viewproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	case WM_MOUSEWHEEL:
 		if ((signed short)HIWORD(wParam) > 0)
-			handlekey(LOWORD(wParam) & MK_SHIFT ? '+' : 'k');
+		{
+			handlemouse(oldx, oldy, 4, 1);
+			handlemouse(oldx, oldy, 4, -1);
+		}
 		else
-			handlekey(LOWORD(wParam) & MK_SHIFT ? '-' : 'j');
+		{
+			handlemouse(oldx, oldy, 5, 1);
+			handlemouse(oldx, oldy, 5, -1);
+		}
 		return 0;
 
 	/* Timer */
@@ -1152,17 +1172,57 @@ viewproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
+typedef BOOL (SetProcessDPIAwareFn)(void);
+
+static int
+get_system_dpi(void)
+{
+	HMODULE hUser32 = LoadLibrary(TEXT("user32.dll"));
+	SetProcessDPIAwareFn *ptr;
+	int hdpi, vdpi;
+	HDC desktopDC;
+
+	ptr = (SetProcessDPIAwareFn *)GetProcAddress(hUser32, "SetProcessDPIAware");
+	if (ptr != NULL)
+		ptr();
+	FreeLibrary(hUser32);
+
+	desktopDC = GetDC(NULL);
+	hdpi = GetDeviceCaps(desktopDC, LOGPIXELSX);
+	vdpi = GetDeviceCaps(desktopDC, LOGPIXELSY);
+	/* hdpi,vdpi = 100 means 96dpi. */
+	return ((hdpi + vdpi) * 96.0 + 0.5) / 200;
+}
+
+static void usage(void)
+{
+	fprintf(stderr, "usage: mupdf [options] file.pdf [page]\n");
+	fprintf(stderr, "\t-p -\tpassword\n");
+	fprintf(stderr, "\t-r -\tresolution\n");
+	fprintf(stderr, "\t-A -\tset anti-aliasing quality in bits (0=off, 8=best)\n");
+	fprintf(stderr, "\t-C -\tRRGGBB (tint color in hexadecimal syntax)\n");
+	fprintf(stderr, "\t-W -\tpage width for EPUB layout\n");
+	fprintf(stderr, "\t-H -\tpage height for EPUB layout\n");
+	fprintf(stderr, "\t-S -\tfont size for EPUB layout\n");
+	fprintf(stderr, "\t-U -\tuser style sheet for EPUB layout\n");
+	exit(1);
+}
+
 int WINAPI
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
 	int argc;
-	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+	LPWSTR *wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
+	char **argv;
 	char argv0[256];
 	MSG msg;
 	int code;
 	fz_context *ctx;
-	int arg;
 	int bps = 0;
+	int displayRes = get_system_dpi();
+	int c;
+	char *password = NULL;
+	char *layout_css = NULL;
 
 	ctx = fz_new_context(NULL, NULL, FZ_STORE_DEFAULT);
 	if (!ctx)
@@ -1172,39 +1232,50 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 	}
 	pdfapp_init(ctx, &gapp);
 
+	argv = fz_argv_from_wargv(argc, wargv);
+
+	while ((c = fz_getopt(argc, argv, "p:r:A:C:W:H:S:U:b:")) != -1)
+	{
+		switch (c)
+		{
+		case 'C':
+			c = strtol(fz_optarg, NULL, 16);
+			gapp.tint = 1;
+			gapp.tint_r = (c >> 16) & 255;
+			gapp.tint_g = (c >> 8) & 255;
+			gapp.tint_b = (c) & 255;
+			break;
+		case 'p': password = fz_optarg; break;
+		case 'r': displayRes = fz_atoi(fz_optarg); break;
+		case 'A': fz_set_aa_level(ctx, fz_atoi(fz_optarg)); break;
+		case 'W': gapp.layout_w = fz_atoi(fz_optarg); break;
+		case 'H': gapp.layout_h = fz_atoi(fz_optarg); break;
+		case 'S': gapp.layout_em = fz_atoi(fz_optarg); break;
+		case 'b': bps = (fz_optarg && *fz_optarg) ? fz_atoi(fz_optarg) : 4096; break;
+		case 'U': layout_css = fz_optarg; break;
+		default: usage();
+		}
+	}
+
+	pdfapp_setresolution(&gapp, displayRes);
+
 	GetModuleFileNameA(NULL, argv0, sizeof argv0);
 	install_app(argv0);
 
 	winopen();
 
-	arg = 1;
-	while (arg < argc)
+	if (fz_optind < argc)
 	{
-		if (!wcscmp(argv[arg], L"-p"))
-		{
-			if (arg+1 < argc)
-				bps = _wtoi(argv[++arg]);
-			else
-				bps = 4096;
-		}
-		else
-			break;
-		arg++;
-	}
-
-	if (arg < argc)
-	{
-		wcscpy(wbuf, argv[arg]);
+		strcpy(filename, argv[fz_optind]);
 	}
 	else
 	{
 		if (!winfilename(wbuf, nelem(wbuf)))
 			exit(0);
+		code = WideCharToMultiByte(CP_UTF8, 0, wbuf, -1, filename, sizeof filename, NULL, NULL);
+		if (code == 0)
+			winerror(&gapp, "cannot convert filename to utf-8");
 	}
-
-	code = WideCharToMultiByte(CP_UTF8, 0, wbuf, -1, filename, sizeof filename, NULL, NULL);
-	if (code == 0)
-		winerror(&gapp, "cannot convert filename to utf-8");
 
 	if (bps)
 		pdfapp_open_progressive(&gapp, filename, 0, bps);
@@ -1217,8 +1288,9 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 		DispatchMessage(&msg);
 	}
 
+	fz_free_argv(argc, argv);
+
 	do_close(&gapp);
-	fz_free_context(ctx);
 
 	return 0;
 }

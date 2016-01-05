@@ -3,11 +3,6 @@
 
 typedef unsigned char byte;
 
-static inline float roundup(float x)
-{
-	return (x < 0) ? floorf(x) : ceilf(x);
-}
-
 static inline int lerp(int a, int b, int t)
 {
 	return a + (((b - a) * t) >> 16);
@@ -111,54 +106,170 @@ fz_paint_affine_alpha_N_near(byte *dp, byte *sp, int sw, int sh, int u, int v, i
 	int k;
 	int n1 = n-1;
 
-	while (w--)
+	if (fa == 0)
 	{
 		int ui = u >> 16;
-		int vi = v >> 16;
-		if (ui >= 0 && ui < sw && vi >= 0 && vi < sh)
+		if (ui < 0 || ui >= sw)
+			return;
+		sp += ui * n;
+		sw *= n;
+		while (w--)
 		{
-			byte *sample = sp + ((vi * sw + ui) * n);
-			int a = fz_mul255(sample[n-1], alpha);
-			int t = 255 - a;
-			for (k = 0; k < n1; k++)
-				dp[k] = fz_mul255(sample[k], alpha) + fz_mul255(dp[k], t);
-			dp[n1] = a + fz_mul255(dp[n1], t);
+			int vi = v >> 16;
+			if (vi >= 0 && vi < sh)
+			{
+				byte *sample = sp + (vi * sw);
+				int a = fz_mul255(sample[n-1], alpha);
+				int t = 255 - a;
+				for (k = 0; k < n1; k++)
+					dp[k] = fz_mul255(sample[k], alpha) + fz_mul255(dp[k], t);
+				dp[n1] = a + fz_mul255(dp[n1], t);
+				if (hp)
+					hp[0] = a + fz_mul255(hp[0], t);
+			}
+			dp += n;
 			if (hp)
-				hp[0] = a + fz_mul255(hp[0], t);
+				hp++;
+			v += fb;
 		}
-		dp += n;
-		if (hp)
-			hp++;
-		u += fa;
-		v += fb;
+	}
+	else if (fb == 0)
+	{
+		int vi = v >> 16;
+		if (vi < 0 || vi >= sh)
+			return;
+		sp += vi * sw * n;
+		while (w--)
+		{
+			int ui = u >> 16;
+			if (ui >= 0 && ui < sw)
+			{
+				byte *sample = sp + (ui * n);
+				int a = fz_mul255(sample[n-1], alpha);
+				int t = 255 - a;
+				for (k = 0; k < n1; k++)
+					dp[k] = fz_mul255(sample[k], alpha) + fz_mul255(dp[k], t);
+				dp[n1] = a + fz_mul255(dp[n1], t);
+				if (hp)
+					hp[0] = a + fz_mul255(hp[0], t);
+			}
+			dp += n;
+			if (hp)
+				hp++;
+			u += fa;
+		}
+	}
+	else
+	{
+		while (w--)
+		{
+			int ui = u >> 16;
+			int vi = v >> 16;
+			if (ui >= 0 && ui < sw && vi >= 0 && vi < sh)
+			{
+				byte *sample = sp + ((vi * sw + ui) * n);
+				int a = fz_mul255(sample[n-1], alpha);
+				int t = 255 - a;
+				for (k = 0; k < n1; k++)
+					dp[k] = fz_mul255(sample[k], alpha) + fz_mul255(dp[k], t);
+				dp[n1] = a + fz_mul255(dp[n1], t);
+				if (hp)
+					hp[0] = a + fz_mul255(hp[0], t);
+			}
+			dp += n;
+			if (hp)
+				hp++;
+			u += fa;
+			v += fb;
+		}
 	}
 }
 
 static inline void
 fz_paint_affine_alpha_g2rgb_near(byte *dp, byte *sp, int sw, int sh, int u, int v, int fa, int fb, int w, int alpha, byte *hp)
 {
-	while (w--)
+	if (fa == 0)
 	{
 		int ui = u >> 16;
-		int vi = v >> 16;
-		if (ui >= 0 && ui < sw && vi >= 0 && vi < sh)
+		if (ui < 0 || ui >= sw)
+			return;
+		sp += ui * 2;
+		sw *= 2;
+		while (w--)
 		{
-			byte *sample = sp + ((vi * sw + ui) * 2);
-			int x = fz_mul255(sample[0], alpha);
-			int a = fz_mul255(sample[1], alpha);
-			int t = 255 - a;
-			dp[0] = x + fz_mul255(dp[0], t);
-			dp[1] = x + fz_mul255(dp[1], t);
-			dp[2] = x + fz_mul255(dp[2], t);
-			dp[3] = a + fz_mul255(dp[3], t);
+			int vi = v >> 16;
+			if (vi >= 0 && vi < sh)
+			{
+				byte *sample = sp + (vi * sw);
+				int x = fz_mul255(sample[0], alpha);
+				int a = fz_mul255(sample[1], alpha);
+				int t = 255 - a;
+				dp[0] = x + fz_mul255(dp[0], t);
+				dp[1] = x + fz_mul255(dp[1], t);
+				dp[2] = x + fz_mul255(dp[2], t);
+				dp[3] = a + fz_mul255(dp[3], t);
+				if (hp)
+					hp[0] = a + fz_mul255(hp[0], t);
+			}
+			dp += 4;
 			if (hp)
-				hp[0] = a + fz_mul255(hp[0], t);
+				hp++;
+			v += fb;
 		}
-		dp += 4;
-		if (hp)
-			hp++;
-		u += fa;
-		v += fb;
+	}
+	else if (fb == 0)
+	{
+		int vi = v >> 16;
+		if (vi < 0 || vi >= sh)
+			return;
+		sp += vi * sw * 2;
+		while (w--)
+		{
+			int ui = u >> 16;
+			if (ui >= 0 && ui < sw)
+			{
+				byte *sample = sp + (ui * 2);
+				int x = fz_mul255(sample[0], alpha);
+				int a = fz_mul255(sample[1], alpha);
+				int t = 255 - a;
+				dp[0] = x + fz_mul255(dp[0], t);
+				dp[1] = x + fz_mul255(dp[1], t);
+				dp[2] = x + fz_mul255(dp[2], t);
+				dp[3] = a + fz_mul255(dp[3], t);
+				if (hp)
+					hp[0] = a + fz_mul255(hp[0], t);
+			}
+			dp += 4;
+			if (hp)
+				hp++;
+			u += fa;
+		}
+	}
+	else
+	{
+		while (w--)
+		{
+			int ui = u >> 16;
+			int vi = v >> 16;
+			if (ui >= 0 && ui < sw && vi >= 0 && vi < sh)
+			{
+				byte *sample = sp + ((vi * sw + ui) * 2);
+				int x = fz_mul255(sample[0], alpha);
+				int a = fz_mul255(sample[1], alpha);
+				int t = 255 - a;
+				dp[0] = x + fz_mul255(dp[0], t);
+				dp[1] = x + fz_mul255(dp[1], t);
+				dp[2] = x + fz_mul255(dp[2], t);
+				dp[3] = a + fz_mul255(dp[3], t);
+				if (hp)
+					hp[0] = a + fz_mul255(hp[0], t);
+			}
+			dp += 4;
+			if (hp)
+				hp++;
+			u += fa;
+			v += fb;
+		}
 	}
 }
 
@@ -240,54 +351,281 @@ fz_paint_affine_N_near(byte *dp, byte *sp, int sw, int sh, int u, int v, int fa,
 	int k;
 	int n1 = n-1;
 
-	while (w--)
+	if (fa == 0)
 	{
 		int ui = u >> 16;
-		int vi = v >> 16;
-		if (ui >= 0 && ui < sw && vi >= 0 && vi < sh)
+		if (ui < 0 || ui >= sw)
+			return;
+		sp += ui*n;
+		sw *= n;
+		while (w--)
 		{
-			byte *sample = sp + ((vi * sw + ui) * n);
-			int a = sample[n1];
-			int t = 255 - a;
-			for (k = 0; k < n1; k++)
-				dp[k] = sample[k] + fz_mul255(dp[k], t);
-			dp[n1] = a + fz_mul255(dp[n1], t);
+			int vi = v >> 16;
+			if (vi >= 0 && vi < sh)
+			{
+				byte *sample = sp + (vi * sw);
+				int a = sample[n1];
+				/* If a is 0, then sample[k] = 0 for all k, as premultiplied */
+				if (a != 0)
+				{
+					int t = 255 - a;
+					if (t == 0)
+					{
+						if (n == 4)
+						{
+							*(int *)dp = *(int *)sample;
+						}
+						else
+						{
+							for (k = 0; k < n1; k++)
+								dp[k] = sample[k];
+							dp[n1] = a;
+						}
+						if (hp)
+							hp[0] = a;
+					}
+					else
+					{
+						for (k = 0; k < n1; k++)
+							dp[k] = sample[k] + fz_mul255(dp[k], t);
+						dp[n1] = a + fz_mul255(dp[n1], t);
+						if (hp)
+							hp[0] = a + fz_mul255(hp[0], t);
+					}
+				}
+			}
+			dp += n;
 			if (hp)
-				hp[0] = a + fz_mul255(hp[0], t);
+				hp++;
+			v += fb;
 		}
-		dp += n;
-		if (hp)
-			hp++;
-		u += fa;
-		v += fb;
+	}
+	else if (fb == 0)
+	{
+		int vi = v >> 16;
+		if (vi < 0 || vi >= sh)
+			return;
+		sp += vi * sw * n;
+		while (w--)
+		{
+			int ui = u >> 16;
+			if (ui >= 0 && ui < sw)
+			{
+				byte *sample = sp + (ui * n);
+				int a = sample[n1];
+				/* If a is 0, then sample[k] = 0 for all k, as premultiplied */
+				if (a != 0)
+				{
+					int t = 255 - a;
+					if (t == 0)
+					{
+						if (n == 4)
+						{
+							*(int *)dp = *(int *)sample;
+						}
+						else
+						{
+							for (k = 0; k < n1; k++)
+								dp[k] = sample[k];
+							dp[n1] = a;
+						}
+						if (hp)
+							hp[0] = a;
+					}
+					else
+					{
+						for (k = 0; k < n1; k++)
+							dp[k] = sample[k] + fz_mul255(dp[k], t);
+						dp[n1] = a + fz_mul255(dp[n1], t);
+						if (hp)
+							hp[0] = a + fz_mul255(hp[0], t);
+					}
+				}
+			}
+			dp += n;
+			if (hp)
+				hp++;
+			u += fa;
+		}
+	}
+	else
+	{
+		while (w--)
+		{
+			int ui = u >> 16;
+			int vi = v >> 16;
+			if (ui >= 0 && ui < sw && vi >= 0 && vi < sh)
+			{
+				byte *sample = sp + ((vi * sw + ui) * n);
+				int a = sample[n1];
+				/* If a is 0, then sample[k] = 0 for all k, as premultiplied */
+				if (a != 0)
+				{
+					int t = 255 - a;
+					if (t == 0)
+					{
+						if (n == 4)
+						{
+							*(int *)dp = *(int *)sample;
+						}
+						else
+						{
+							for (k = 0; k < n1; k++)
+								dp[k] = sample[k];
+							dp[n1] = a;
+						}
+						if (hp)
+							hp[0] = a;
+					}
+					else
+					{
+						for (k = 0; k < n1; k++)
+							dp[k] = sample[k] + fz_mul255(dp[k], t);
+						dp[n1] = a + fz_mul255(dp[n1], t);
+						if (hp)
+							hp[0] = a + fz_mul255(hp[0], t);
+					}
+				}
+			}
+			dp += n;
+			if (hp)
+				hp++;
+			u += fa;
+			v += fb;
+		}
 	}
 }
 
 static inline void
 fz_paint_affine_solid_g2rgb_near(byte *dp, byte *sp, int sw, int sh, int u, int v, int fa, int fb, int w, byte *hp)
 {
-	while (w--)
+	if (fa == 0)
 	{
 		int ui = u >> 16;
-		int vi = v >> 16;
-		if (ui >= 0 && ui < sw && vi >= 0 && vi < sh)
+		if (ui < 0 || ui >= sw)
+			return;
+		sp += ui * 2;
+		sw *= 2;
+		while (w--)
 		{
-			byte *sample = sp + ((vi * sw + ui) * 2);
-			int x = sample[0];
-			int a = sample[1];
-			int t = 255 - a;
-			dp[0] = x + fz_mul255(dp[0], t);
-			dp[1] = x + fz_mul255(dp[1], t);
-			dp[2] = x + fz_mul255(dp[2], t);
-			dp[3] = a + fz_mul255(dp[3], t);
+			int vi = v >> 16;
+			if (vi >= 0 && vi < sh)
+			{
+				byte *sample = sp + (vi * sw);
+				int a = sample[1];
+				if (a != 0)
+				{
+					int x = sample[0];
+					int t = 255 - a;
+					if (t == 0)
+					{
+						dp[0] = x;
+						dp[1] = x;
+						dp[2] = x;
+						dp[3] = a;
+						if (hp)
+							hp[0] = a;
+					}
+					else
+					{
+						dp[0] = x + fz_mul255(dp[0], t);
+						dp[1] = x + fz_mul255(dp[1], t);
+						dp[2] = x + fz_mul255(dp[2], t);
+						dp[3] = a + fz_mul255(dp[3], t);
+						if (hp)
+							hp[0] = a + fz_mul255(hp[0], t);
+					}
+				}
+			}
+			dp += 4;
 			if (hp)
-				hp[0] = a + fz_mul255(hp[0], t);
+				hp++;
+			v += fb;
 		}
-		dp += 4;
-		if (hp)
-			hp++;
-		u += fa;
-		v += fb;
+	}
+	else if (fb == 0)
+	{
+		int vi = v >> 16;
+		if (vi < 0 || vi >= sh)
+			return;
+		sp += vi * sw * 2;
+		while (w--)
+		{
+			int ui = u >> 16;
+			if (ui >= 0 && ui < sw)
+			{
+				byte *sample = sp + (ui * 2);
+				int a = sample[1];
+				if (a != 0)
+				{
+					int x = sample[0];
+					int t = 255 - a;
+					if (t == 0)
+					{
+						dp[0] = x;
+						dp[1] = x;
+						dp[2] = x;
+						dp[3] = a;
+						if (hp)
+							hp[0] = a;
+					}
+					else
+					{
+						dp[0] = x + fz_mul255(dp[0], t);
+						dp[1] = x + fz_mul255(dp[1], t);
+						dp[2] = x + fz_mul255(dp[2], t);
+						dp[3] = a + fz_mul255(dp[3], t);
+						if (hp)
+							hp[0] = a + fz_mul255(hp[0], t);
+					}
+				}
+			}
+			dp += 4;
+			if (hp)
+				hp++;
+			u += fa;
+		}
+	}
+	else
+	{
+		while (w--)
+		{
+			int ui = u >> 16;
+			int vi = v >> 16;
+			if (ui >= 0 && ui < sw && vi >= 0 && vi < sh)
+			{
+				byte *sample = sp + ((vi * sw + ui) * 2);
+				int a = sample[1];
+				if (a != 0)
+				{
+					int x = sample[0];
+					int t = 255 - a;
+					if (t == 0)
+					{
+						dp[0] = x;
+						dp[1] = x;
+						dp[2] = x;
+						dp[3] = a;
+						if (hp)
+							hp[0] = a;
+					}
+					else
+					{
+						dp[0] = x + fz_mul255(dp[0], t);
+						dp[1] = x + fz_mul255(dp[1], t);
+						dp[2] = x + fz_mul255(dp[2], t);
+						dp[3] = a + fz_mul255(dp[3], t);
+						if (hp)
+							hp[0] = a + fz_mul255(hp[0], t);
+					}
+				}
+			}
+			dp += 4;
+			if (hp)
+				hp++;
+			u += fa;
+			v += fb;
+		}
 	}
 }
 
@@ -464,12 +802,31 @@ fz_paint_affine_color_near(byte *dp, byte *sp, int sw, int sh, int u, int v, int
  */
 #define MY_EPSILON 0.001
 
+/* We have 2 possible ways of gridfitting images. The first way, considered
+ * 'safe' in all cases, is to expand an image out to fill a box that entirely
+ * covers all the pixels touched by the current image. This is our 'standard'
+ * mechanism.
+ * The alternative, used when we know images are tiled across a page, is to
+ * round the edge of each image to the closest integer pixel boundary. This
+ * would not be safe in the general case, but gives less distortion across
+ * neighbouring images when tiling is used. We use this for .gproof files.
+ */
 void
-fz_gridfit_matrix(fz_matrix *m)
+fz_gridfit_matrix(int as_tiled, fz_matrix *m)
 {
 	if (fabsf(m->b) < FLT_EPSILON && fabsf(m->c) < FLT_EPSILON)
 	{
-		if (m->a > 0)
+		if (as_tiled)
+		{
+			float f;
+			/* Nearest boundary for left */
+			f = (float)(int)(m->e + 0.5);
+			m->a += m->e - f; /* Adjust width for change */
+			m->e = f;
+			/* Nearest boundary for right (width really) */
+			m->a = (float)(int)(m->a + 0.5);
+		}
+		else if (m->a > 0)
 		{
 			float f;
 			/* Adjust left hand side onto pixel boundary */
@@ -499,7 +856,17 @@ fz_gridfit_matrix(fz_matrix *m)
 				f -= 1.0; /* Ensure it moves left */
 			m->a = f;
 		}
-		if (m->d > 0)
+		if (as_tiled)
+		{
+			float f;
+			/* Nearest boundary for top */
+			f = (float)(int)(m->f + 0.5);
+			m->d += m->f - f; /* Adjust width for change */
+			m->f = f;
+			/* Nearest boundary for bottom (height really) */
+			m->d = (float)(int)(m->d + 0.5);
+		}
+		else if (m->d > 0)
 		{
 			float f;
 			/* Adjust top onto pixel boundary */
@@ -532,7 +899,17 @@ fz_gridfit_matrix(fz_matrix *m)
 	}
 	else if (fabsf(m->a) < FLT_EPSILON && fabsf(m->d) < FLT_EPSILON)
 	{
-		if (m->b > 0)
+		if (as_tiled)
+		{
+			float f;
+			/* Nearest boundary for left */
+			f = (float)(int)(m->e + 0.5);
+			m->b += m->e - f; /* Adjust width for change */
+			m->e = f;
+			/* Nearest boundary for right (width really) */
+			m->b = (float)(int)(m->b + 0.5);
+		}
+		else if (m->b > 0)
 		{
 			float f;
 			/* Adjust left hand side onto pixel boundary */
@@ -562,7 +939,17 @@ fz_gridfit_matrix(fz_matrix *m)
 				f -= 1.0; /* Ensure it moves left */
 			m->b = f;
 		}
-		if (m->c > 0)
+		if (as_tiled)
+		{
+			float f;
+			/* Nearest boundary for left */
+			f = (float)(int)(m->f + 0.5);
+			m->c += m->f - f; /* Adjust width for change */
+			m->f = f;
+			/* Nearest boundary for right (width really) */
+			m->c = (float)(int)(m->c + 0.5);
+		}
+		else if (m->c > 0)
 		{
 			float f;
 			/* Adjust top onto pixel boundary */
@@ -598,7 +985,7 @@ fz_gridfit_matrix(fz_matrix *m)
 /* Draw an image with an affine transform on destination */
 
 static void
-fz_paint_image_imp(fz_pixmap *dst, const fz_irect *scissor, fz_pixmap *shape, fz_pixmap *img, const fz_matrix *ctm, byte *color, int alpha)
+fz_paint_image_imp(fz_pixmap *dst, const fz_irect *scissor, fz_pixmap *shape, fz_pixmap *img, const fz_matrix *ctm, byte *color, int alpha, int lerp_allowed, int as_tiled)
 {
 	byte *dp, *sp, *hp;
 	int u, v, fa, fb, fc, fd;
@@ -612,17 +999,17 @@ fz_paint_image_imp(fz_pixmap *dst, const fz_irect *scissor, fz_pixmap *shape, fz
 	int is_rectilinear;
 
 	/* grid fit the image */
-	fz_gridfit_matrix(&local_ctm);
+	fz_gridfit_matrix(as_tiled, &local_ctm);
 
 	/* turn on interpolation for upscaled and non-rectilinear transforms */
 	dolerp = 0;
 	is_rectilinear = fz_is_rectilinear(&local_ctm);
 	if (!is_rectilinear)
-		dolerp = 1;
+		dolerp = lerp_allowed;
 	if (sqrtf(local_ctm.a * local_ctm.a + local_ctm.b * local_ctm.b) > img->w)
-		dolerp = 1;
+		dolerp = lerp_allowed;
 	if (sqrtf(local_ctm.c * local_ctm.c + local_ctm.d * local_ctm.d) > img->h)
-		dolerp = 1;
+		dolerp = lerp_allowed;
 
 	/* except when we shouldn't, at large magnifications */
 	if (!img->interpolate)
@@ -741,15 +1128,15 @@ fz_paint_image_imp(fz_pixmap *dst, const fz_irect *scissor, fz_pixmap *shape, fz
 }
 
 void
-fz_paint_image_with_color(fz_pixmap *dst, const fz_irect *scissor, fz_pixmap *shape, fz_pixmap *img, const fz_matrix *ctm, byte *color)
+fz_paint_image_with_color(fz_pixmap *dst, const fz_irect *scissor, fz_pixmap *shape, fz_pixmap *img, const fz_matrix *ctm, byte *color, int lerp_allowed, int as_tiled)
 {
 	assert(img->n == 1);
-	fz_paint_image_imp(dst, scissor, shape, img, ctm, color, 255);
+	fz_paint_image_imp(dst, scissor, shape, img, ctm, color, 255, lerp_allowed, as_tiled);
 }
 
 void
-fz_paint_image(fz_pixmap *dst, const fz_irect *scissor, fz_pixmap *shape, fz_pixmap *img, const fz_matrix *ctm, int alpha)
+fz_paint_image(fz_pixmap *dst, const fz_irect *scissor, fz_pixmap *shape, fz_pixmap *img, const fz_matrix *ctm, int alpha, int lerp_allowed, int as_tiled)
 {
 	assert(dst->n == img->n || (dst->n == 4 && img->n == 2));
-	fz_paint_image_imp(dst, scissor, shape, img, ctm, NULL, alpha);
+	fz_paint_image_imp(dst, scissor, shape, img, ctm, NULL, alpha, lerp_allowed, as_tiled);
 }

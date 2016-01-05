@@ -379,6 +379,12 @@ jbig2_arith_decode (Jbig2ArithState *as, Jbig2ArithCx *pcx)
     }
 }
 
+bool
+jbig2_arith_has_reached_marker(Jbig2ArithState *as)
+{
+  return as->next_word_bytes == 2 && (as->next_word >> 16) > 0xFF8F;
+}
+
 #ifdef TEST
 
 static int
@@ -416,9 +422,14 @@ main (int argc, char **argv)
 
   for (i = 0; i < 256; i++)
     {
-      bool D;
+#ifdef JBIG2_DEBUG_ARITH
+      bool D =
+#else
+      (void)
+#endif
 
-      D = jbig2_arith_decode (as, &cx);
+      jbig2_arith_decode (as, &cx);
+
 #ifdef JBIG2_DEBUG_ARITH
       fprintf(stderr, "%3d: D = %d, ", i, D);
       jbig2_arith_trace (as, cx);

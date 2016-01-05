@@ -3,8 +3,6 @@ package com.gitden.pdf;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
-import com.gitden.pdf.R;
-
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;

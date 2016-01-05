@@ -2,19 +2,33 @@
 # under Microsoft Visual C++
 #
 # To compile zlib.dll:
-#  Get zlib >= 1.1.4, unzip and rename to zlib,
-#  cd zlib, copy nt\zlib.dnt zlib.dnt, then nmake -f nt\makefile.nt
+#  Get zlib >= 1.2.7, unzip and rename to zlib,
+#  cd zlib, then nmake -f win32\Makefile.msc
 # To compile libpng.lib:
-#  Get libpng >= 1.2.5, unzip then rename to libpng,
+#  Get libpng >= 1.6.0, unzip then rename to libpng,
 #  cd libpng, nmake -f scripts\makefile.vcwin32
 
+!ifndef LIBPNGDIR
 LIBPNGDIR=../libpng
+!endif
+
+!ifndef ZLIBDIR
 ZLIBDIR=../zlib
+!endif
+
 # define iff you're linking to libpng
+!if exist("$(ZLIBDIR)") && exist("$(LIBPNGDIR)") && exist ("$(LIBPNGDIR)/pnglibconf.h")
 LIBPNG_CFLAGS=-DHAVE_LIBPNG -I$(LIBPNGDIR) -I$(ZLIBDIR)
 LIBPNG_LDFLAGS=$(LIBPNGDIR)/libpng.lib $(ZLIBDIR)/zlib.lib /link /NODEFAULTLIB:LIBCMT
-#LIBPNG_CFLAGS=
-#LIBPNG_LDFLAGS=
+
+JBIG2_IMAGE_PNG_OBJ=jbig2_image_png$(OBJ)
+!else
+LIBPNG_CFLAGS=
+LIBPNG_LDFLAGS=
+
+JBIG2_IMAGE_PNG_OBJ=
+!endif
+
 
 EXE=.exe
 OBJ=.obj
@@ -23,10 +37,13 @@ CFLAGS=-nologo -W4 -Zi -DHAVE_STRING_H=1 -D_CRT_SECURE_NO_WARNINGS $(LIBPNG_CFLA
 CC=cl
 FE=-Fe
 
+
+# no libpng
+#
 OBJS=getopt$(OBJ) getopt1$(OBJ) jbig2$(OBJ) jbig2_arith$(OBJ) \
  jbig2_arith_iaid$(OBJ) jbig2_arith_int$(OBJ) jbig2_huffman$(OBJ) \
- jbig2_generic$(OBJ) jbig2_refinement$(OBJ) \
- jbig2_image$(OBJ) jbig2_image_pbm$(OBJ) jbig2_image_png$(OBJ) \
+ jbig2_generic$(OBJ) jbig2_refinement$(OBJ) jbig2_halftone$(OBJ)\
+ jbig2_image$(OBJ) jbig2_image_pbm$(OBJ) $(JBIG2_IMAGE_PNG_OBJ) \
  jbig2_segment$(OBJ) jbig2_symbol_dict$(OBJ) jbig2_text$(OBJ) \
  jbig2_mmr$(OBJ) jbig2_page$(OBJ) jbig2_metadata$(OBJ) \
  jbig2dec$(OBJ) sha1$(OBJ)
@@ -76,6 +93,9 @@ jbig2_image_pbm$(OBJ): jbig2_image_pbm.c $(HDRS)
 
 jbig2_image_png$(OBJ): jbig2_image_png.c $(HDRS)
 	$(CC) $(CFLAGS) -c jbig2_image_png.c
+
+jbig2_halftone$(OBJ): jbig2_halftone.c $(HDRS)
+	$(CC) $(CFLAGS) -c jbig2_halftone.c
 
 jbig2_mmr$(OBJ): jbig2_mmr.c $(HDRS)
 	$(CC) $(CFLAGS) -c jbig2_mmr.c

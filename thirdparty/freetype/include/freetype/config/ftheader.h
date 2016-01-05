@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    Build macros of the FreeType 2 library.                              */
 /*                                                                         */
-/*  Copyright 1996-2008, 2010, 2012 by                                     */
+/*  Copyright 1996-2015 by                                                 */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -326,6 +326,32 @@
    *
    */
 #define FT_AUTOHINTER_H  <freetype/ftautoh.h>
+
+
+  /*************************************************************************
+   *
+   * @macro:
+   *   FT_CFF_DRIVER_H
+   *
+   * @description:
+   *   A macro used in #include statements to name the file containing
+   *   structures and macros related to the CFF driver module.
+   *
+   */
+#define FT_CFF_DRIVER_H  <freetype/ftcffdrv.h>
+
+
+  /*************************************************************************
+   *
+   * @macro:
+   *   FT_TRUETYPE_DRIVER_H
+   *
+   * @description:
+   *   A macro used in #include statements to name the file containing
+   *   structures and macros related to the TrueType driver module.
+   *
+   */
+#define FT_TRUETYPE_DRIVER_H  <freetype/ftttdrv.h>
 
 
   /*************************************************************************
@@ -684,14 +710,16 @@
   /*************************************************************************
    *
    * @macro:
-   *   FT_XFREE86_H
+   *   FT_FONT_FORMATS_H
    *
    * @description:
    *   A macro used in #include statements to name the file containing the
-   *   FreeType~2 API which provides functions specific to the XFree86 and
-   *   X.Org X11 servers.
+   *   FreeType~2 API which provides functions specific to font formats.
    */
-#define FT_XFREE86_H  <freetype/ftxf86.h>
+#define FT_FONT_FORMATS_H  <freetype/ftfntfmt.h>
+
+  /* deprecated */
+#define FT_XFREE86_H  FT_FONT_FORMATS_H
 
 
   /*************************************************************************
@@ -791,7 +819,7 @@
 
 
   /*
-   * Include internal headers definitions from <freetype/internal/...>
+   * Include internal headers definitions from <internal/...>
    * only when building the library.
    */
 #ifdef FT2_BUILD_LIBRARY

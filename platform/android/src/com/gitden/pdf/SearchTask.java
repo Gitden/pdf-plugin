@@ -1,7 +1,5 @@
 package com.gitden.pdf;
 
-import com.gitden.pdf.R;
-
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;

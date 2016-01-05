@@ -1,19 +1,28 @@
 package com.gitden.pdf;
-import java.util.ArrayList;
-
-import com.gitden.pdf.R;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
 import android.graphics.PointF;
 import android.graphics.RectF;
+
+import java.util.ArrayList;
 
 public class MuPDFCore
 {
 	/* load our native library */
+	private static boolean gs_so_available = false;
 	static {
 		System.loadLibrary("mupdf");
+		if (gprfSupportedInternal())
+		{
+			try {
+				System.loadLibrary("gs");
+				gs_so_available = true;
+			}
+			catch (UnsatisfiedLinkError e) {
+				gs_so_available = false;
+			}
+		}
 	}
 
 	/* Readable members */
@@ -23,11 +32,15 @@ public class MuPDFCore
 	private long globals;
 	private byte fileBuffer[];
 	private String file_format;
+	private boolean isUnencryptedPDF;
+	private final boolean wasOpenedFromBuffer;
 
 	/* The native functions */
+	private static native boolean gprfSupportedInternal();
 	private native long openFile(String filename);
-	private native long openBuffer();
+	private native long openBuffer(String magic);
 	private native String fileFormatInternal();
+	private native boolean isUnencryptedPDFInternal();
 	private native int countPagesInternal();
 	private native void gotoPageInternal(int localActionPageNum);
 	private native float getPageWidth();
@@ -35,12 +48,14 @@ public class MuPDFCore
 	private native void drawPage(Bitmap bitmap,
 			int pageW, int pageH,
 			int patchX, int patchY,
-			int patchW, int patchH);
+			int patchW, int patchH,
+			long cookiePtr);
 	private native void updatePageInternal(Bitmap bitmap,
 			int page,
 			int pageW, int pageH,
 			int patchX, int patchY,
-			int patchW, int patchH);
+			int patchW, int patchH,
+			long cookiePtr);
 	private native RectF[] searchPage(String text);
 	private native TextChar[][][][] text();
 	private native byte[] textAsHtml();
@@ -51,6 +66,9 @@ public class MuPDFCore
 	private native void setFocusedWidgetChoiceSelectedInternal(String [] selected);
 	private native String [] getFocusedWidgetChoiceSelected();
 	private native String [] getFocusedWidgetChoiceOptions();
+	private native int getFocusedWidgetSignatureState();
+	private native String checkFocusedSignatureInternal();
+	private native boolean signFocusedSignatureInternal(String keyFile, String password);
 	private native int setFocusedWidgetTextInternal(String text);
 	private native String getFocusedWidgetTextInternal();
 	private native int getFocusedWidgetTypeInternal();
@@ -68,8 +86,41 @@ public class MuPDFCore
 	private native void destroying();
 	private native boolean hasChangesInternal();
 	private native void saveInternal();
+	private native long createCookie();
+	private native void destroyCookie(long cookie);
+	private native void abortCookie(long cookie);
 
-	public static native boolean javascriptSupported();
+	private native String startProofInternal(int resolution);
+	private native void endProofInternal(String filename);
+	private native int getNumSepsOnPageInternal(int page);
+	private native int controlSepOnPageInternal(int page, int sep, boolean disable);
+	private native Separation getSepInternal(int page, int sep);
+
+	public native boolean javascriptSupported();
+
+	public class Cookie
+	{
+		private final long cookiePtr;
+
+		public Cookie()
+		{
+			cookiePtr = createCookie();
+			if (cookiePtr == 0)
+				throw new OutOfMemoryError();
+		}
+
+		public void abort()
+		{
+			abortCookie(cookiePtr);
+		}
+
+		public void destroy()
+		{
+			// We could do this in finalize, but there's no guarantee that
+			// a finalize will occur before the muPDF context occurs.
+			destroyCookie(cookiePtr);
+		}
+	}
 
 	public MuPDFCore(Context context, String filename) throws Exception
 	{
@@ -79,30 +130,42 @@ public class MuPDFCore
 			throw new Exception(String.format(context.getString(R.string.cannot_open_file_Path), filename));
 		}
 		file_format = fileFormatInternal();
+		isUnencryptedPDF = isUnencryptedPDFInternal();
+		wasOpenedFromBuffer = false;
 	}
 
-	public MuPDFCore(Context context, byte buffer[]) throws Exception
-	{
+	public MuPDFCore(Context context, byte buffer[], String magic) throws Exception {
 		fileBuffer = buffer;
-		globals = openBuffer();
+		globals = openBuffer(magic != null ? magic : "");
 		if (globals == 0)
 		{
 			throw new Exception(context.getString(R.string.cannot_open_buffer));
 		}
 		file_format = fileFormatInternal();
+		isUnencryptedPDF = isUnencryptedPDFInternal();
+		wasOpenedFromBuffer = true;
 	}
 
-	public  int countPages()
+	public int countPages()
 	{
 		if (numPages < 0)
 			numPages = countPagesSynchronized();
-
 		return numPages;
 	}
 
 	public String fileFormat()
 	{
 		return file_format;
+	}
+
+	public boolean isUnencryptedPDF()
+	{
+		return isUnencryptedPDF;
+	}
+
+	public boolean wasOpenedFromBuffer()
+	{
+		return wasOpenedFromBuffer;
 	}
 
 	private synchronized int countPagesSynchronized() {
@@ -148,31 +211,21 @@ public class MuPDFCore
 		globals = 0;
 	}
 
-	public synchronized Bitmap drawPage(int page,
+	public synchronized void drawPage(Bitmap bm, int page,
 			int pageW, int pageH,
 			int patchX, int patchY,
-			int patchW, int patchH) {
+			int patchW, int patchH,
+			MuPDFCore.Cookie cookie) {
 		gotoPage(page);
-		Bitmap bm = Bitmap.createBitmap(patchW, patchH, Config.ARGB_8888);
-		drawPage(bm, pageW, pageH, patchX, patchY, patchW, patchH);
-		return bm;
+		drawPage(bm, pageW, pageH, patchX, patchY, patchW, patchH, cookie.cookiePtr);
 	}
 
-	public synchronized Bitmap updatePage(BitmapHolder h, int page,
+	public synchronized void updatePage(Bitmap bm, int page,
 			int pageW, int pageH,
 			int patchX, int patchY,
-			int patchW, int patchH) {
-		Bitmap bm = null;
-		Bitmap old_bm = h.getBm();
-
-		if (old_bm == null)
-			return null;
-
-		bm = old_bm.copy(Bitmap.Config.ARGB_8888, false);
-		old_bm = null;
-
-		updatePageInternal(bm, page, pageW, pageH, patchX, patchY, patchW, patchH);
-		return bm;
+			int patchW, int patchH,
+			MuPDFCore.Cookie cookie) {
+		updatePageInternal(bm, page, pageW, pageH, patchX, patchY, patchW, patchH, cookie.cookiePtr);
 	}
 
 	public synchronized PassClickResult passClickEvent(int page, float x, float y) {
@@ -185,6 +238,8 @@ public class MuPDFCore
 		case LISTBOX:
 		case COMBOBOX:
 			return new PassClickResultChoice(changed, getFocusedWidgetChoiceOptions(), getFocusedWidgetChoiceSelected());
+		case SIGNATURE:
+			return new PassClickResultSignature(changed, getFocusedWidgetSignatureState());
 		default:
 			return new PassClickResult(changed);
 		}
@@ -201,6 +256,14 @@ public class MuPDFCore
 
 	public synchronized void setFocusedWidgetChoiceSelected(String [] selected) {
 		setFocusedWidgetChoiceSelectedInternal(selected);
+	}
+
+	public synchronized String checkFocusedSignature() {
+		return checkFocusedSignatureInternal();
+	}
+
+	public synchronized boolean signFocusedSignature(String keyFile, String password) {
+		return signFocusedSignatureInternal(keyFile, password);
 	}
 
 	public synchronized LinkInfo [] getPageLinks(int page) {
@@ -235,6 +298,8 @@ public class MuPDFCore
 		ArrayList<TextWord[]> lns = new ArrayList<TextWord[]>();
 
 		for (TextChar[][][] bl: chars) {
+			if (bl == null)
+				continue;
 			for (TextChar[][] ln: bl) {
 				ArrayList<TextWord> wds = new ArrayList<TextWord>();
 				TextWord wd = new TextWord();
@@ -298,5 +363,39 @@ public class MuPDFCore
 
 	public synchronized void save() {
 		saveInternal();
+	}
+
+	public synchronized String startProof(int resolution) {
+		return startProofInternal(resolution);
+	}
+
+	public synchronized void endProof(String filename) {
+		endProofInternal(filename);
+	}
+
+	public static boolean gprfSupported() {
+		if (gs_so_available == false)
+			return false;
+		return gprfSupportedInternal();
+	}
+
+	public boolean canProof()
+	{
+		String format = fileFormat();
+		if (format.contains("PDF"))
+			return true;
+		return false;
+	}
+
+	public synchronized int getNumSepsOnPage(int page) {
+		return getNumSepsOnPageInternal(page);
+	}
+
+	public synchronized int controlSepOnPage(int page, int sep, boolean disable) {
+		return controlSepOnPageInternal(page, sep, disable);
+	}
+
+	public synchronized Separation getSep(int page, int sep) {
+		return getSepInternal(page, sep);
 	}
 }

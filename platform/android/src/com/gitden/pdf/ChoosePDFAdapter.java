@@ -2,8 +2,6 @@ package com.gitden.pdf;
 
 import java.util.LinkedList;
 
-import com.gitden.pdf.R;
-
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;

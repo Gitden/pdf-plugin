@@ -3,13 +3,13 @@
 # Suppose our base version is X:
 
 # Version X: armeabi
-#APP_PLATFORM=android-8
-#APP_ABI := armeabi
+APP_PLATFORM=android-8
+APP_ABI := armeabi armeabi-v7a
 
 # Version X+1: armeabi-v7a (Much faster due to the availability of hardware
 # FP, but cannot be run in the emulator).
-APP_PLATFORM=android-8
-APP_ABI := armeabi-v7a
+# APP_PLATFORM=android-8
+# APP_ABI := armeabi-v7a
 
 # Version X+2: x86 (Requires android-9, so a change needs to be made in
 # AndroidManifest.xml too)
@@ -28,7 +28,12 @@ ifdef NDK_PROFILER
 APP_OPTIM := debug
 APP_CFLAGS := -O2
 else
+ifdef DEBUG
+APP_OPTIM := debug
+APP_CFLAGS := -DDEBUG
+else
 APP_OPTIM := release
+endif
 endif
 ifdef V8_BUILD
 APP_STL := stlport_static

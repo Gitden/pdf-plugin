@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.gitden.pdf"
-	android:versionCode="50"
+	android:versionCode="14"
 	android:versionName="@string/version"
 	android:installLocation="auto">
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -11,7 +11,7 @@
 		android:normalScreens="true"
 		android:largeScreens="true"
 		android:anyDensity="true" />
-	<uses-sdk android:minSdkVersion="8" android:targetSdkVersion="11"/>
+	<uses-sdk android:minSdkVersion="8" android:targetSdkVersion="16"/>
 	<application
 		android:label="@string/app_name"
 		android:icon="@drawable/icon"
@@ -32,26 +32,7 @@
 			<intent-filter>
 				<action android:name="android.intent.action.VIEW"/>
 				<category android:name="android.intent.category.DEFAULT"/>
-				<data android:mimeType="application/vnd.ms-xpsdocument"/>
-			</intent-filter>
-			<intent-filter>
-				<action android:name="android.intent.action.VIEW"/>
-				<category android:name="android.intent.category.DEFAULT"/>
 				<data android:mimeType="application/pdf"/>
-			</intent-filter>
-			<intent-filter>
-				<action android:name="android.intent.action.VIEW"/>
-				<category android:name="android.intent.category.DEFAULT"/>
-				<data android:mimeType="application/x-cbz"/>
-			</intent-filter>
-			<intent-filter>
-				<action android:name="android.intent.action.VIEW"/>
-				<category android:name="android.intent.category.DEFAULT"/>
-				<category android:name="android.intent.category.BROWSABLE"/>
-				<data android:scheme="file"/>
-				<data android:mimeType="*/*"/>
-				<data android:pathPattern=".*\\.xps"/>
-				<data android:host="*"/>
 			</intent-filter>
 			<intent-filter>
 				<action android:name="android.intent.action.VIEW"/>
@@ -60,15 +41,6 @@
 				<data android:scheme="file"/>
 				<data android:mimeType="*/*"/>
 				<data android:pathPattern=".*\\.pdf"/>
-				<data android:host="*"/>
-			</intent-filter>
-			<intent-filter>
-				<action android:name="android.intent.action.VIEW"/>
-				<category android:name="android.intent.category.DEFAULT"/>
-				<category android:name="android.intent.category.BROWSABLE"/>
-				<data android:scheme="file"/>
-				<data android:mimeType="*/*"/>
-				<data android:pathPattern=".*\\.cbz"/>
 				<data android:host="*"/>
 			</intent-filter>
 		</activity>
@@ -83,4 +55,4 @@
 			android:label="@string/print">
 		</activity>
 	</application>
-</manifest> 
+</manifest>
